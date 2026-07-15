@@ -4,34 +4,101 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>Cuenta atrás a las 21:30</title>
+<title>FIN DEL DÍA</title>
 
 <style>
+:root{
+    color-scheme: dark;
+}
+
 *{
     margin:0;
     padding:0;
     box-sizing:border-box;
 }
 
-html,body{
-    width:100%;
-    height:100%;
-}
-
 body{
     display:flex;
     justify-content:center;
     align-items:center;
+    min-height:100vh;
     background:transparent;
-    font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+    font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
 }
 
-#countdown{
-    font-size:64px;
+.widget{
+    width:340px;
+    height:360px;
+
+    background:rgba(28,28,30,.82);
+
+    border-radius:30px;
+
+    border:1px solid rgba(255,255,255,.08);
+
+    backdrop-filter:blur(22px);
+    -webkit-backdrop-filter:blur(22px);
+
+    display:flex;
+    flex-direction:column;
+    justify-content:center;
+    align-items:center;
+}
+
+.title{
+    color:white;
+    font-size:15px;
     font-weight:700;
-    letter-spacing:2px;
-    color:#37352F;
+    letter-spacing:4px;
+    margin-bottom:28px;
+    user-select:none;
+}
+
+.ring{
+    position:relative;
+    width:230px;
+    height:230px;
+}
+
+svg{
+    width:230px;
+    height:230px;
+    transform:rotate(-90deg);
+}
+
+.track{
+    fill:none;
+    stroke:rgba(255,255,255,.10);
+    stroke-width:12;
+}
+
+.progress{
+    fill:none;
+    stroke:white;
+    stroke-width:12;
+    stroke-linecap:round;
+
+    filter:drop-shadow(0 0 6px rgba(255,255,255,.35));
+
+    transition:stroke-dashoffset .8s linear;
+}
+
+.time{
+    position:absolute;
+    inset:0;
+
+    display:flex;
+    justify-content:center;
+    align-items:center;
+
+    color:white;
+
+    font-size:38px;
+    font-weight:800;
+
     font-variant-numeric:tabular-nums;
+    letter-spacing:1px;
+
     user-select:none;
 }
 </style>
@@ -39,53 +106,95 @@ body{
 
 <body>
 
-<div id="countdown">00:00:00</div>
+<div class="widget">
+
+    <div class="title">
+        FIN DEL DÍA
+    </div>
+
+    <div class="ring">
+
+        <svg viewBox="0 0 230 230">
+
+            <circle
+                class="track"
+                cx="115"
+                cy="115"
+                r="95"/>
+
+            <circle
+                id="progress"
+                class="progress"
+                cx="115"
+                cy="115"
+                r="95"/>
+
+        </svg>
+
+        <div id="time" class="time">
+            00:00:00
+        </div>
+
+    </div>
+
+</div>
 
 <script>
-function nextTarget() {
+
+const END_HOUR = 21;
+const END_MINUTE = 30;
+
+const radius = 95;
+const circumference = 2 * Math.PI * radius;
+
+const progress = document.getElementById("progress");
+
+progress.style.strokeDasharray = circumference;
+progress.style.strokeDashoffset = 0;
+
+function pad(value){
+    return String(value).padStart(2,"0");
+}
+
+function update(){
+
     const now = new Date();
-    const target = new Date(now);
 
-    // Hora objetivo: 21:30:00 (9:30 p. m.)
-    target.setHours(21, 30, 0, 0);
+    let target = new Date(now);
+    target.setHours(END_HOUR, END_MINUTE, 0, 0);
 
-    // Si ya pasó esa hora hoy, usar mañana
-    if (now >= target) {
+    if(now >= target){
         target.setDate(target.getDate() + 1);
     }
 
-    return target;
-}
+    const remaining = target - now;
 
-let target = nextTarget();
+    const hours = Math.floor(remaining / 3600000);
+    const minutes = Math.floor((remaining % 3600000) / 60000);
+    const seconds = Math.floor((remaining % 60000) / 1000);
 
-function pad(n) {
-    return String(n).padStart(2, "0");
-}
-
-function update() {
-    const now = new Date();
-
-    if (now >= target) {
-        target = nextTarget();
-    }
-
-    let diff = target - now;
-
-    const hours = Math.floor(diff / (1000 * 60 * 60));
-    diff %= (1000 * 60 * 60);
-
-    const minutes = Math.floor(diff / (1000 * 60));
-    diff %= (1000 * 60);
-
-    const seconds = Math.floor(diff / 1000);
-
-    document.getElementById("countdown").textContent =
+    document.getElementById("time").textContent =
         `${pad(hours)}:${pad(minutes)}:${pad(seconds)}`;
+
+    const start = new Date(target);
+    start.setHours(0,0,0,0);
+
+    const total = target - start;
+    const elapsed = now - start;
+
+    let percent = elapsed / total;
+
+    percent = Math.max(0, Math.min(1, percent));
+
+    // El anillo comienza lleno y se vacía durante el día
+    progress.style.strokeDashoffset = circumference * percent;
+
 }
 
 update();
-setInterval(update, 1000);
+
+setInterval(update,1000);
+
 </script>
 
 </body>
